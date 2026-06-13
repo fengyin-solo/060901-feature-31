@@ -20,7 +20,8 @@ export function useGame() {
   const getCurrentPlayer = (room: Room): string => {
     if (room.members.length === 0) return ''
     const memberIndex = room.currentTurn % room.members.length
-    return room.members[memberIndex].name
+    const member = room.members[memberIndex]
+    return member.noteName || member.name
   }
 
   const flipNextCard = (roomId: string): Topic | null => {

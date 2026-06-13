@@ -180,6 +180,7 @@ const handleChoice = (choice: 'talk' | 'truth' | 'dare') => {
                 :name="member.name"
                 :avatar="member.avatar"
                 :is-host="member.isHost"
+                :note-name="member.noteName"
                 size="sm"
               />
             </div>

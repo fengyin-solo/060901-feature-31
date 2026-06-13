@@ -12,7 +12,7 @@ import { copyToClipboard, getDaysRemaining } from '@/utils/helpers'
 
 const route = useRoute()
 const router = useRouter()
-const { loadRoom, currentRoom, addTopic, removeTopic, startGame, error, loadRooms } = useRoom()
+const { loadRoom, currentRoom, addTopic, removeTopic, startGame, error, loadRooms, updateMemberNote } = useRoom()
 const { isRoomExpired, getExpirationWarning } = useExpire()
 
 const topicContent = ref('')
@@ -22,6 +22,9 @@ const authorName = ref('')
 const showAddTopic = ref(false)
 const copySuccess = ref(false)
 const selectedTemplate = ref<TopicTemplate | null>(null)
+const editingMember = ref<Member | null>(null)
+const showEditNote = ref(false)
+const noteNameInput = ref('')
 
 const roomId = computed(() => route.params.id as string)
 
@@ -40,6 +43,37 @@ const canStartGame = computed(() =>
 const expirationWarning = computed(() => 
   currentRoom.value ? getExpirationWarning(currentRoom.value.expiresAt) : null
 )
+
+const isHost = computed(() => {
+  if (!currentRoom.value || !authorName.value) return false
+  return currentRoom.value.members.some(m => m.name === authorName.value && m.isHost)
+})
+
+const openEditNote = (member: Member) => {
+  editingMember.value = member
+  noteNameInput.value = member.noteName || ''
+  showEditNote.value = true
+}
+
+const handleSaveNote = () => {
+  if (!editingMember.value || !currentRoom.value) return
+  
+  updateMemberNote(
+    roomId.value,
+    editingMember.value.id,
+    noteNameInput.value
+  )
+  
+  showEditNote.value = false
+  editingMember.value = null
+  noteNameInput.value = ''
+}
+
+const handleCancelEditNote = () => {
+  showEditNote.value = false
+  editingMember.value = null
+  noteNameInput.value = ''
+}
 
 onMounted(() => {
   loadRooms()
@@ -193,16 +227,29 @@ const goToGame = () => {
         <div class="mb-6">
           <h3 class="text-sm font-medium text-gray-600 mb-3 flex items-center gap-2">
             <span>👥</span> 成员 ({{ currentRoom.members.length }})
+            <span v-if="isHost" class="text-xs text-purple-500 font-normal">（点击头像可修改备注）</span>
           </h3>
           <div class="flex flex-wrap gap-4">
-            <MemberAvatar 
+            <div 
               v-for="member in currentRoom.members" 
               :key="member.id"
-              :name="member.name"
-              :avatar="member.avatar"
-              :is-host="member.isHost"
-              size="sm"
-            />
+              :class="{ 'cursor-pointer hover:opacity-80 transition-opacity': isHost }"
+              @click="isHost && openEditNote(member)"
+            >
+              <MemberAvatar 
+                :name="member.name"
+                :avatar="member.avatar"
+                :is-host="member.isHost"
+                :note-name="member.noteName"
+                size="sm"
+              />
+              <div 
+                v-if="isHost && member.noteName" 
+                class="text-center text-xs text-gray-400 mt-0.5"
+              >
+                原名: {{ member.name }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -377,6 +424,50 @@ const goToGame = () => {
             @click="handleAddTopic"
           >
             丢进去！
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div 
+      v-if="showEditNote && editingMember"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      @click.self="handleCancelEditNote"
+    >
+      <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
+        <div class="text-5xl mb-4">{{ editingMember.avatar }}</div>
+        <h3 class="text-xl font-bold text-gray-800 mb-2">
+          修改备注
+        </h3>
+        <p class="text-sm text-gray-500 mb-4">
+          成员原名：{{ editingMember.name }}
+        </p>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2 text-left">
+            备注昵称
+          </label>
+          <input 
+            v-model="noteNameInput"
+            type="text" 
+            placeholder="输入备注昵称（留空则清除备注）"
+            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all text-center"
+            maxlength="20"
+          />
+        </div>
+        
+        <div class="flex gap-3">
+          <button 
+            class="flex-1 px-4 py-3 bg-gray-100 text-gray-600 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+            @click="handleCancelEditNote"
+          >
+            取消
+          </button>
+          <button 
+            class="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity"
+            @click="handleSaveNote"
+          >
+            保存
           </button>
         </div>
       </div>

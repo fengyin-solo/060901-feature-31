@@ -189,6 +189,24 @@ export function useRoom() {
     return true
   }
 
+  const updateMemberNote = (roomId: string, memberId: string, noteName: string): boolean => {
+    const room = getRoomById(roomId)
+    if (!room) return false
+
+    const member = room.members.find(m => m.id === memberId)
+    if (!member) return false
+
+    member.noteName = noteName.trim() || undefined
+    saveRoom(room)
+    
+    if (currentRoom.value?.id === roomId) {
+      currentRoom.value = room
+    }
+    loadRooms()
+    
+    return true
+  }
+
   const removeRoom = (id: string): boolean => {
     deleteRoom(id)
     loadRooms()
@@ -222,5 +240,6 @@ export function useRoom() {
     endGame,
     resetGame,
     removeRoom,
+    updateMemberNote,
   }
 }

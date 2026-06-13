@@ -1,10 +1,14 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+const props = defineProps<{
   name: string
   avatar: string
   isHost?: boolean
   size?: 'sm' | 'md' | 'lg'
+  noteName?: string
 }>()
+
+const displayName = computed(() => props.noteName || props.name)
 </script>
 
 <template>
@@ -41,7 +45,7 @@ defineProps<{
         'text-base': size === 'lg'
       }"
     >
-      {{ name }}
+      {{ displayName }}
     </span>
   </div>
 </template>
